@@ -2,21 +2,13 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { NavLink } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { createSelector } from 'reselect';
 
 import { translate as $t } from '../../helpers';
 import { get } from '../../store';
-import { findRedundantPairs } from '../duplicates';
+import { findRedundantPairsSelector } from '../duplicates';
 
 import About from './about';
 import BankList from './banks';
-
-// Prevent recalculation of the duplicates number at each update of url.
-const duplicatesNumberSelector = createSelector(
-    (state, currentAccountId) => get.operationsByAccountId(state, currentAccountId),
-    state => get.setting(state, 'duplicateThreshold'),
-    (ops, threshold) => findRedundantPairs(ops, threshold).length
-);
 
 const Entry = props => {
     let { className = '' } = props;
@@ -44,7 +36,7 @@ Entry.propTypes = {
 const DuplicatesEntry = connect((state, props) => {
     const { currentAccountId } = props;
     return {
-        numDuplicates: duplicatesNumberSelector(state, currentAccountId)
+        numDuplicates: findRedundantPairsSelector(state, currentAccountId).length
     };
 })(props => {
     let { currentAccountId, numDuplicates } = props;

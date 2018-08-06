@@ -1313,8 +1313,18 @@ export function operationIdsByAccountId(state, accountId) {
     return account !== null ? account.operationIds : [];
 }
 
+// Without a weak cache on the operation ids, operationsByAccountId will return
+// a different array everytime it's called, because of the call to .map(). We
+// don't want just a plain map, because the operationIds array may change over
+// time, leading to memory leaks if it's not weakly held.
+let weakOperationsCache = new WeakMap();
+
 export function operationsByAccountId(state, accountId) {
-    return operationIdsByAccountId(state, accountId).map(id => operationById(state, id));
+    let { operationIds } = accountById(state, accountId);
+    if (!weakOperationsCache.has(operationIds)) {
+        weakOperationsCache.set(operationIds, operationIds.map(id => operationById(state, id)));
+    }
+    return weakOperationsCache.get(operationIds);
 }
 
 export function alertPairsByType(state, alertType) {

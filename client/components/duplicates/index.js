@@ -1,5 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { createSelector } from 'reselect';
 
 import { actions, get } from '../../store';
 import { debug as dbg, translate as $t, UNKNOWN_OPERATION_TYPE } from '../../helpers';
@@ -30,7 +31,7 @@ function debug(text) {
 }
 
 // Algorithm
-export function findRedundantPairs(operations, duplicateThreshold) {
+function findRedundantPairs(operations, duplicateThreshold) {
     let before = Date.now();
     debug('Running findRedundantPairs algorithm...');
     debug(`Input: ${operations.length} operations`);
@@ -78,6 +79,12 @@ export function findRedundantPairs(operations, duplicateThreshold) {
     return similar;
 }
 
+export const findRedundantPairsSelector = createSelector(
+    (state, currentAccountId) => get.operationsByAccountId(state, currentAccountId),
+    state => get.setting(state, 'duplicateThreshold'),
+    (ops, threshold) => findRedundantPairs(ops, threshold)
+);
+
 const THRESHOLDS_SUITE = [24, 24 * 2, 24 * 3, 24 * 4, 24 * 7, 24 * 14];
 const NUM_THRESHOLDS_SUITE = THRESHOLDS_SUITE.length;
 
@@ -98,7 +105,6 @@ function computePrevNextThreshold(current) {
 export default connect(
     (state, props) => {
         let { currentAccountId } = props.match.params;
-        let currentOperations = get.operationsByAccountId(state, currentAccountId);
         let formatCurrency = get.accountById(state, currentAccountId).formatCurrency;
 
         let duplicateThreshold = parseFloat(get.setting(state, 'duplicateThreshold'));
@@ -109,7 +115,7 @@ export default connect(
 
         let [prevThreshold, nextThreshold] = computePrevNextThreshold(duplicateThreshold);
 
-        let pairs = findRedundantPairs(currentOperations, duplicateThreshold);
+        let pairs = findRedundantPairsSelector(state, currentAccountId);
         return {
             pairs,
             formatCurrency,
